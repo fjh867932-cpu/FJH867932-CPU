@@ -1,6 +1,33 @@
 /* ==========================================
-   huiwu.com — SPA 路由 + 便签墙模块
+   huiwu.com — SPA 路由 + 便签墙 (Supabase)
    ========================================== */
+
+// ─── Supabase 配置 ─────────────────────────────
+const SUPABASE_URL = 'https://wwqqvfnuxpddhgwuwiut.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_JlVVDqSKs7RHM6VMldBIYA_CsLWihKo';
+
+// ─── API 封装 ──────────────────────────────────
+async function api(path, { method = 'GET', body, headers = {} } = {}) {
+  const opts = {
+    method,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      ...headers,
+    },
+  };
+  if (body) opts.body = JSON.stringify(body);
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, opts);
+  if (!res.ok) {
+    console.error(`API ${method} ${path} failed:`, res.status);
+    return null;
+  }
+  // 204 No Content（DELETE 等）
+  if (res.status === 204) return null;
+  return res.json();
+}
 
 // ─── DOM 引用 ──────────────────────────────────
 const view      = document.getElementById('view');
@@ -37,22 +64,12 @@ const navbarTitles = {
 function updateNavbar(route) {
   const title = navbarTitles[route] || 'huiwu.com';
   navTitle.textContent = title;
-
-  if (route === '') {
-    navBack.classList.add('hidden');
-  } else {
-    navBack.classList.remove('hidden');
-  }
+  navBack.classList.toggle('hidden', route === '');
 }
 
 function goBack() {
   const current = getRoute();
-  // 子路由回退到父级
-  if (current.startsWith('info/')) {
-    navigateTo('info');
-  } else {
-    navigateTo('');
-  }
+  navigateTo(current.startsWith('info/') ? 'info' : '');
 }
 
 // ─── 路由核心 ──────────────────────────────────
@@ -67,15 +84,9 @@ function navigateTo(route) {
 function handleRoute() {
   const route = getRoute();
   updateNavbar(route);
-
   const renderer = routes[route];
-  if (renderer) {
-    view.innerHTML = '';
-    renderer();
-  } else {
-    // 未知路由 → 回主页
-    navigateTo('');
-  }
+  view.innerHTML = '';
+  if (renderer) renderer(); else navigateTo('');
 }
 
 window.addEventListener('hashchange', handleRoute);
@@ -109,12 +120,8 @@ function renderHome() {
       </div>
     </div>
   `;
-
-  // 卡片点击导航
   view.querySelectorAll('.home-card').forEach(card => {
-    card.addEventListener('click', () => {
-      navigateTo(card.dataset.nav);
-    });
+    card.addEventListener('click', () => navigateTo(card.dataset.nav));
   });
 }
 
@@ -151,11 +158,8 @@ function renderInfo() {
       </div>
     </div>
   `;
-
   view.querySelectorAll('.info-card').forEach(card => {
-    card.addEventListener('click', () => {
-      navigateTo(card.dataset.nav);
-    });
+    card.addEventListener('click', () => navigateTo(card.dataset.nav));
   });
 }
 
@@ -171,15 +175,13 @@ function renderPlaceholder(title, desc, icon) {
 }
 
 // ══════════════════════════════════════════════
-//  便签墙模块
+//  便签墙模块（Supabase 持久化）
 // ══════════════════════════════════════════════
 
 function renderWall() {
-  // 从模板克隆 DOM
   const clone = tplWall.content.cloneNode(true);
   view.appendChild(clone);
 
-  // DOM 引用（从克隆体中查找）
   const wall       = $('.wall', view);
   const wallBg     = $('.wall-bg', view);
   const notesLayer = $('.notes-layer', view);
@@ -187,41 +189,95 @@ function renderWall() {
   const hint       = $('.create-hint', view);
   const noteCount  = $('.tool-note-count', view);
 
-  // 状态
-  const STORAGE_KEY = 'sticky-wall-notes';
-  const BG_KEY      = 'sticky-wall-bg';
-
   let notes     = [];
   let editingId = null;
   let bgDataUrl = null;
 
-  // 工具
+  // ── 工具 ────────────────────────────────────
   function uid() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   }
   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
-  // 持久化
-  function saveState() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
-      if (bgDataUrl) localStorage.setItem(BG_KEY, bgDataUrl);
-    } catch (_) {}
+  function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
   }
 
-  function loadState() {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) notes = JSON.parse(saved);
-      const bg = localStorage.getItem(BG_KEY);
-      if (bg) {
-        bgDataUrl = bg;
-        wallBg.style.backgroundImage = `url(${bg})`;
-      }
-    } catch (_) { notes = []; }
+  function formatDate(val) {
+    if (!val) return '';
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return '';
+    return `${d.getMonth() + 1}月${d.getDate()}日`;
   }
 
-  // 背景上传
+  // ── Supabase API ────────────────────────────
+  // 行映射：Supabase snake_case → 前端 camelCase
+  function mapRow(row) {
+    return {
+      id: row.id,
+      x: Number(row.pos_x),
+      y: Number(row.pos_y),
+      text: row.content || '',
+      rolled: Boolean(row.rolled),
+      createdAt: row.created_at,
+    };
+  }
+
+  // 反向映射：前端 → Supabase
+  function toRow(note) {
+    return {
+      id: note.id,
+      pos_x: note.x,
+      pos_y: note.y,
+      content: note.text,
+      rolled: note.rolled,
+    };
+  }
+
+  async function loadNotes() {
+    const data = await api('/notes?select=*&order=created_at.desc');
+    if (data) notes = data.map(mapRow);
+  }
+
+  async function saveNote(note) {
+    await api(`/notes?id=eq.${note.id}`, {
+      method: 'PATCH',
+      body: toRow(note),
+      headers: { 'Prefer': 'return=minimal' },
+    });
+  }
+
+  async function createNoteAPI(note) {
+    await api('/notes', {
+      method: 'POST',
+      body: { ...toRow(note), created_at: new Date().toISOString() },
+      headers: { 'Prefer': 'return=minimal' },
+    });
+  }
+
+  async function deleteNoteAPI(id) {
+    await api(`/notes?id=eq.${id}`, { method: 'DELETE' });
+  }
+
+  async function loadBg() {
+    const data = await api('/settings?key_name=eq.bg_image&select=value');
+    if (data && data.length > 0 && data[0].value) {
+      bgDataUrl = data[0].value;
+      wallBg.style.backgroundImage = `url(${bgDataUrl})`;
+    }
+  }
+
+  async function saveBg() {
+    await api('/settings', {
+      method: 'POST',
+      body: { key_name: 'bg_image', value: bgDataUrl || '' },
+      headers: { 'Prefer': 'resolution=merge-duplicates' },
+    });
+  }
+
+  // ── 背景上传 ────────────────────────────────
   bgInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -229,25 +285,13 @@ function renderWall() {
     reader.onload = () => {
       bgDataUrl = reader.result;
       wallBg.style.backgroundImage = `url(${bgDataUrl})`;
-      saveState();
+      saveBg();
     };
     reader.readAsDataURL(file);
     bgInput.value = '';
   });
 
-  // 渲染
-  function escapeHTML(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-  }
-
-  function formatDate(ts) {
-    if (!ts) return '';
-    const d = new Date(ts);
-    return `${d.getMonth() + 1}月${d.getDate()}日`;
-  }
-
+  // ── 渲染 ────────────────────────────────────
   function updateCount() {
     noteCount.textContent = `${notes.length} 张便签`;
   }
@@ -288,14 +332,14 @@ function renderWall() {
       <div class="note-preview">${escapeHTML(note.text) || '空白便签'}</div>
     `;
 
-    const textarea = el.querySelector('.note-body');
+    const textarea  = el.querySelector('.note-body');
     const deleteBtn = el.querySelector('.note-delete');
 
     textarea.addEventListener('input', () => {
       note.text = textarea.value;
       el.querySelector('.note-preview').textContent = note.text || '空白便签';
       autoResize(textarea);
-      debounceSave();
+      debounceSaveNote(note);
     });
 
     textarea.addEventListener('pointerdown', (e) => {
@@ -327,10 +371,14 @@ function renderWall() {
     return el;
   }
 
-  // 创建便签
-  function createNote(clientX, clientY) {
+  // ── 创建便签 ────────────────────────────────
+  async function createNote(clientX, clientY) {
+    // 卷起其他展开的便签（本地 + API）
     notes.forEach(n => {
-      if (!n.rolled && n.id !== editingId) n.rolled = true;
+      if (!n.rolled && n.id !== editingId) {
+        n.rolled = true;
+        saveNote(n);
+      }
     });
 
     const rect = wall.getBoundingClientRect();
@@ -343,11 +391,14 @@ function renderWall() {
       y: clamp(y, 5, 90),
       text: '',
       rolled: false,
-      createdAt: Date.now(),
+      createdAt: new Date().toISOString(),
     };
 
     notes.push(note);
     editingId = note.id;
+
+    // 异步存到 Supabase
+    createNoteAPI(note);
 
     notesLayer.innerHTML = '';
     notes.forEach(n => renderNote(n));
@@ -358,22 +409,20 @@ function renderWall() {
       const nel = notesLayer.querySelector(`[data-id="${note.id}"]`);
       if (nel) { const ta = nel.querySelector('.note-body'); if (ta) ta.focus(); }
     });
-
-    saveState();
   }
 
-  // 删除
-  function deleteNote(id) {
+  // ── 删除 ────────────────────────────────────
+  async function deleteNote(id) {
     notes = notes.filter(n => n.id !== id);
     if (editingId === id) editingId = null;
     notesLayer.innerHTML = '';
     notes.forEach(n => renderNote(n));
     updateCount();
     updateHint();
-    saveState();
+    deleteNoteAPI(id);
   }
 
-  // 卷起
+  // ── 卷起 ────────────────────────────────────
   function rollUpNote(id) {
     const note = notes.find(n => n.id === id);
     if (!note || note.rolled) return;
@@ -386,10 +435,10 @@ function renderWall() {
       el.classList.add('rolled');
       el.querySelector('.note-preview').textContent = note.text || '空白便签';
     }
-    saveState();
+    saveNote(note);
   }
 
-  // 展开
+  // ── 展开 ────────────────────────────────────
   function expandNote(id) {
     notes.forEach(n => {
       if (n.id !== id && !n.rolled) {
@@ -400,6 +449,7 @@ function renderWall() {
           other.classList.add('rolled');
           other.querySelector('.note-preview').textContent = n.text || '空白便签';
         }
+        saveNote(n);
       }
     });
 
@@ -417,10 +467,10 @@ function renderWall() {
         if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
       });
     }
-    saveState();
+    saveNote(note);
   }
 
-  // 拖拽
+  // ── 拖拽 ────────────────────────────────────
   let dragState = null;
 
   function startDrag(e, el, note) {
@@ -434,7 +484,7 @@ function renderWall() {
     el.classList.add('dragging');
     el.setPointerCapture(e.pointerId);
     el.onpointermove = onDrag;
-    el.onpointerup = endDrag;
+    el.onpointerup   = endDrag;
     el.onpointercancel = endDrag;
   }
 
@@ -456,13 +506,14 @@ function renderWall() {
     if (!dragState) return;
     dragState.el.classList.remove('dragging');
     dragState.el.onpointermove = null;
-    dragState.el.onpointerup = null;
+    dragState.el.onpointerup   = null;
     dragState.el.onpointercancel = null;
+    const note = dragState.note;
     dragState = null;
-    debounceSave();
+    saveNote(note);
   }
 
-  // 墙面点击
+  // ── 墙面点击 ────────────────────────────────
   wall.addEventListener('pointerdown', (e) => {
     if (e.target.closest('.toolbar')) return;
     if (e.target.closest('.note')) return;
@@ -477,20 +528,24 @@ function renderWall() {
 
   wall.addEventListener('dblclick', (e) => e.preventDefault());
 
-  // 防抖保存
-  let saveTimer = null;
-  function debounceSave() {
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(saveState, 400);
+  // ── 防抖保存 ────────────────────────────────
+  const saveTimers = {};
+  function debounceSaveNote(note) {
+    clearTimeout(saveTimers[note.id]);
+    saveTimers[note.id] = setTimeout(() => saveNote(note), 600);
   }
 
-  // 启动便签墙
-  loadState();
-  renderAllNotes();
+  // ── 启动便签墙 ──────────────────────────────
+  async function initWall() {
+    await loadBg();
+    await loadNotes();
+    renderAllNotes();
+  }
+
+  initWall();
 }
 
 // ─── 启动应用 ──────────────────────────────────
-// 如果直接访问无 hash，自动加上
 if (!window.location.hash) {
   window.location.hash = '#/';
 } else {
