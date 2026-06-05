@@ -48,7 +48,8 @@ const routes = {
                     '解答你的学习疑问，知识触手可及。', '💬'),
   'info/collect': () => renderPlaceholder('信息收集',
                     '搜集、整理、归纳，构建你的知识库。', '🔍'),
-  'history':      renderBookshelf,
+  'history':       renderHistory,
+  'history/books': renderBookshelf,
 };
 
 // ─── 导航栏 ────────────────────────────────────
@@ -58,7 +59,8 @@ const navbarTitles = {
   'info/notes':   '信息记载',
   'info/reply':   '信息回复',
   'info/collect': '信息收集',
-  'history':      '历史记录',
+  'history':       '历史记录',
+  'history/books': '书籍记录',
 };
 
 function updateNavbar(route) {
@@ -69,7 +71,9 @@ function updateNavbar(route) {
 
 function goBack() {
   const current = getRoute();
-  navigateTo(current.startsWith('info/') ? 'info' : '');
+  if (current.startsWith('info/')) navigateTo('info');
+  else if (current.startsWith('history/')) navigateTo('history');
+  else navigateTo('');
 }
 
 // ─── 路由核心 ──────────────────────────────────
@@ -163,6 +167,28 @@ function renderInfo() {
   });
 }
 
+// ─── 页面：历史记录子菜单 ──────────────────
+function renderHistory() {
+  view.innerHTML = `
+    <div class="page-info">
+      <p class="section-title">选择类型</p>
+      <div class="info-cards">
+        <div class="info-card" data-nav="history/books">
+          <div class="info-card-dot notes"></div>
+          <div class="info-card-body">
+            <h4>书籍记录</h4>
+            <p>记录读过的每一本书，写下观后感</p>
+          </div>
+          <span class="info-card-arrow">›</span>
+        </div>
+      </div>
+    </div>
+  `;
+  view.querySelectorAll('.info-card').forEach(card => {
+    card.addEventListener('click', () => navigateTo(card.dataset.nav));
+  });
+}
+
 // ─── 页面：占位 ────────────────────────────────
 function renderPlaceholder(title, desc, icon) {
   view.innerHTML = `
@@ -189,7 +215,10 @@ function renderWall() {
   const hint       = $('.create-hint', view);
   const noteCount  = $('.tool-note-count', view);
   const toolbar    = $('.toolbar', view);
-  const toolbarPin = $('.toolbar-pin', view);
+  const floatBtns  = $('.float-btns', view);
+  const btnPan     = $('.float-btn-pan', view);
+  const btnAdd     = $('.float-btn-add', view);
+  const btnTool    = $('.float-btn-tool', view);
 
   let notes       = [];
   let editingId   = null;
@@ -557,24 +586,32 @@ function renderWall() {
     saveNote(note);
   }
 
-  // ── 工具栏圆钉切换 ──────────────────────────
-  toolbarPin.addEventListener('click', (e) => {
+  // ── 3 按钮模式 ──────────────────────────────
+  let wallMode = ''; // '' | 'pan' | 'add'
+
+  function setMode(mode) {
+    wallMode = wallMode === mode ? '' : mode;
+    btnPan.classList.toggle('active', wallMode === 'pan');
+    btnAdd.classList.toggle('active', wallMode === 'add');
+  }
+
+  btnPan.addEventListener('click', (e) => { e.stopPropagation(); setMode('pan'); });
+  btnAdd.addEventListener('click', (e) => { e.stopPropagation(); setMode('add'); });
+  btnTool.addEventListener('click', (e) => {
     e.stopPropagation();
-    toolbar.classList.remove('collapsed');
-    toolbarPin.classList.add('hidden');
+    toolbar.classList.toggle('collapsed');
   });
 
   function collapseToolbar() {
     if (!toolbar.classList.contains('collapsed')) {
       toolbar.classList.add('collapsed');
-      toolbarPin.classList.remove('hidden');
     }
   }
 
   // ── 墙面点击 ────────────────────────────────
   wall.addEventListener('pointerdown', (e) => {
     if (e.target.closest('.toolbar')) return;
-    if (e.target.closest('.toolbar-pin')) return;
+    if (e.target.closest('.float-btns')) return;
     if (e.target.closest('.note')) return;
 
     collapseToolbar();
@@ -584,13 +621,17 @@ function renderWall() {
       return;
     }
 
+    // 'pan' 模式不允许创建
+    if (wallMode === 'pan') return;
+
     createNote(e.clientX, e.clientY);
   });
 
-  // ── 双击缩放 ────────────────────────────────
+  // ── 双击缩放（add 模式下禁用） ──────────────
   wall.addEventListener('dblclick', (e) => {
     e.preventDefault();
-    if (e.target.closest('.note')) return;  // 便签上双击不缩放
+    if (wallMode === 'add') return;
+    if (e.target.closest('.note')) return;
     zoomLevel = zoomLevel === 1 ? 1.5 : 1;
     wall.style.setProperty('--zoom', zoomLevel);
     wall.classList.toggle('zoomed', zoomLevel > 1);
@@ -857,11 +898,14 @@ function renderBookshelf() {
     bookNotepad.classList.toggle('open');
   });
 
-  // 标题输入
+  // 标题输入 → 激活封面按钮
   bookTitleInp.addEventListener('input', () => {
     if (!focusedId) return;
     const book = books.find(b => b.id === focusedId);
-    if (book) book.title = bookTitleInp.value.trim();
+    if (book) {
+      book.title = bookTitleInp.value.trim();
+      if (!book.coverUrl) bookCoverBtn.disabled = !book.title;
+    }
   });
 
   // 观后感输入

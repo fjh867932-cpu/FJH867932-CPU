@@ -21,7 +21,7 @@
   --neu-dark: rgba(180, 170, 150, 0.35);
 
   /* 便签 */
-  --note-bg: rgba(255, 252, 242, 0.94);
+  --note-bg: rgba(255, 255, 252, 0.93);
   --note-text: #4a3f2f;
 
   /* 尺寸（移动端优先） */
@@ -535,33 +535,43 @@ html, body {
   pointer-events: none;
 }
 
-/* 圆钉按钮 */
-.toolbar-pin {
+/* 浮动按钮组（3 按钮） */
+.float-btns {
   position: absolute;
   bottom: calc(var(--safe-bottom) + 16px);
   right: 16px;
-  width: 40px; height: 40px;
+  display: flex; flex-direction: column;
+  gap: 8px;
+  z-index: 201;
+}
+
+.float-btn {
+  width: 36px; height: 36px;
   border-radius: 50%;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255,255,255,0.15);
   color: #fff;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  z-index: 201;
-  transition: transform 0.2s, opacity 0.3s ease 0.15s, box-shadow 0.2s;
+  transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
   box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
-.toolbar-pin:active { transform: scale(0.9); }
-.toolbar-pin:hover {
-  box-shadow: 0 3px 14px rgba(0,0,0,0.35);
-  background: rgba(0,0,0,0.55);
+.float-btn:active { transform: scale(0.9); }
+.float-btn:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.35); }
+
+.float-btn-tool { background: rgba(0,0,0,0.45); }
+.float-btn-pan  { background: rgba(80,120,200,0.5); }
+.float-btn-add  { background: rgba(200,160,40,0.5); }
+
+.float-btn.active {
+  box-shadow: 0 0 14px currentColor;
+  border-color: rgba(255,255,255,0.4);
 }
-.toolbar-pin.hidden { opacity: 0; pointer-events: none; transition: opacity 0.15s ease; }
 
 @media (min-width: 600px) {
-  .toolbar-pin { width: 44px; height: 44px; }
+  .float-btn { width: 40px; height: 40px; }
 }
 
 .tool-btn {
@@ -596,41 +606,18 @@ html, body {
   overflow: hidden;
 }
 
-/* ─── 梵高星空背景 (CSS 模拟) ──────────────── */
+/* ─── 梵高星空背景 ────────────────────────── */
 .starry-bg {
   position: absolute; inset: 0;
   background:
-    /* 星点 */
-    radial-gradient(1.5px 1.5px at 12% 18%, #ffd700 60%, transparent),
-    radial-gradient(2px 2px at 28% 25%, #ffe44d 50%, transparent),
-    radial-gradient(1px 1px at 45% 12%, #ffd700 70%, transparent),
-    radial-gradient(2px 2px at 62% 22%, #ffed4a 50%, transparent),
-    radial-gradient(1.5px 1.5px at 78% 15%, #ffd700 60%, transparent),
-    radial-gradient(1px 1px at 88% 28%, #ffe44d 70%, transparent),
-    radial-gradient(2px 2px at 8% 38%, #ffd700 50%, transparent),
-    radial-gradient(1px 1px at 32% 35%, #ffed4a 70%, transparent),
-    radial-gradient(1.5px 1.5px at 55% 30%, #ffd700 60%, transparent),
-    radial-gradient(2px 2px at 72% 38%, #ffe44d 50%, transparent),
-    radial-gradient(1px 1px at 92% 42%, #ffd700 70%, transparent),
-    radial-gradient(1.5px 1.5px at 18% 48%, #ffd700 60%, transparent),
-    radial-gradient(2px 2px at 42% 42%, #ffed4a 50%, transparent),
-    /* 漩涡 */
-    radial-gradient(ellipse 80% 30% at 55% 55%, rgba(30,60,120,0.4) 0%, transparent 70%),
-    radial-gradient(ellipse 60% 20% at 65% 40%, rgba(20,40,100,0.3) 0%, transparent 60%),
-    radial-gradient(ellipse 70% 25% at 35% 50%, rgba(25,50,110,0.3) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 15% at 50% 35%, rgba(40,80,150,0.25) 0%, transparent 50%),
-    /* 深空背景 */
-    linear-gradient(180deg,
-      #050520 0%,
-      #0a1040 20%,
-      #0d1550 40%,
-      #0a1040 60%,
-      #081030 80%,
-      #050820 100%
-    ),
-    /* 底部暗影 */
-    linear-gradient(0deg, #020010 0%, transparent 30%);
+    url(https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1280px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg)
+    center / cover no-repeat;
   z-index: 0;
+}
+.starry-bg::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.15);
 }
 
 /* ─── 时间轴 ──────────────────────────────── */
@@ -651,13 +638,12 @@ html, body {
 .timeline-node {
   width: 10px; height: 10px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.35);
   flex-shrink: 0;
-  transition: background 0.2s, transform 0.2s;
+  transition: transform 0.2s;
   cursor: pointer;
 }
-.timeline-node:hover { background: rgba(255,215,0,0.7); transform: scale(1.4); }
-.timeline-node.active { background: #ffd700; box-shadow: 0 0 8px rgba(255,215,0,0.5); }
+.timeline-node:hover { transform: scale(1.5); }
+.timeline-node.active { box-shadow: 0 0 10px currentColor; transform: scale(1.3); }
 
 .timeline-gap {
   height: 1px;
@@ -687,34 +673,23 @@ html, body {
   pointer-events: none;
 }
 
-/* ─── 书脊 ────────────────────────────────── */
+/* ─── 书本封面卡片 ──────────────────────── */
 .book-spine {
-  width: 70px; height: 100px;
-  border-radius: 3px 8px 8px 3px;
+  width: 72px; height: 96px;
+  border-radius: 3px 6px 6px 3px;
   cursor: pointer;
   position: relative;
   transition: transform 0.3s ease, box-shadow 0.3s ease, filter 0.4s ease;
-  box-shadow:
-    2px 3px 8px rgba(0,0,0,0.4),
-    inset 1px 0 0 rgba(255,255,255,0.15),
-    inset -2px 0 3px rgba(0,0,0,0.2);
+  box-shadow: 3px 4px 10px rgba(0,0,0,0.45);
   z-index: 1;
-}
-.book-spine::after {
-  content: '';
-  position: absolute;
-  left: 4px; top: 6px; bottom: 6px;
-  width: 2px;
-  background: rgba(255,255,255,0.12);
-  border-radius: 1px;
+  overflow: hidden;
 }
 .book-spine:active { transform: scale(0.95); }
 
-/* 有封面的书显示小缩略图 */
+/* 有封面的书 */
 .book-spine.has-cover {
   background-size: cover !important;
   background-position: center !important;
-  box-shadow: 2px 3px 10px rgba(0,0,0,0.5);
 }
 
 /* 选中的书跳脱虚化 */
@@ -722,35 +697,35 @@ html, body {
   filter: blur(0) !important;
   opacity: 1 !important;
   z-index: 50;
-  transform: scale(1.15);
-  box-shadow: 0 0 30px rgba(255,215,0,0.4), 4px 6px 16px rgba(0,0,0,0.5);
+  transform: scale(1.2);
+  box-shadow: 0 0 30px rgba(255,215,0,0.5), 5px 8px 20px rgba(0,0,0,0.6);
   pointer-events: auto;
 }
 
 .book-spine-title {
   position: absolute;
   top: 50%; left: 50%;
-  transform: translate(-50%, -50%) rotate(-90deg);
+  transform: translate(-50%, -50%);
   font-size: 10px;
-  color: rgba(255,255,255,0.85);
+  color: rgba(255,255,255,0.9);
+  text-align: center;
   white-space: nowrap;
-  letter-spacing: 1px;
-  font-weight: 500;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-  max-width: 80px;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  max-width: 60px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 @media (min-width: 600px) {
-  .book-spine { width: 85px; height: 120px; }
-  .book-spine-title { font-size: 11px; max-width: 95px; }
+  .book-spine { width: 90px; height: 120px; }
+  .book-spine-title { font-size: 11px; max-width: 75px; }
   .books-grid { gap: 14px; padding: 20px 14px; }
 }
 
 @media (min-width: 1024px) {
-  .book-spine { width: 100px; height: 140px; }
-  .book-spine-title { font-size: 12px; max-width: 110px; }
+  .book-spine { width: 110px; height: 146px; }
+  .book-spine-title { font-size: 13px; max-width: 90px; }
   .books-grid { gap: 18px; padding: 24px 20px; }
 }
 
@@ -764,24 +739,24 @@ html, body {
 }
 .books-overlay.active { pointer-events: auto; opacity: 1; }
 
-/* ─── 书籍详情弹层 ────────────────────────── */
+/* ─── 书籍详情弹层（缩小3号） ────────────── */
 .book-detail {
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%) scale(0);
-  width: min(320px, 85vw);
+  width: min(220px, 78vw);
   background: rgba(15,15,40,0.92);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.12);
-  padding: 20px;
+  padding: 14px;
   z-index: 60;
   opacity: 0;
   transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease;
   display: flex; flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.6);
 }
 .book-detail.active {
@@ -790,14 +765,13 @@ html, body {
 }
 
 .book-cover-area {
-  width: 120px; height: 160px;
-  border-radius: 4px 10px 10px 4px;
+  width: 84px; height: 112px;
+  border-radius: 3px 8px 8px 3px;
   background: rgba(255,255,255,0.06);
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
   position: relative;
   box-shadow: 2px 3px 8px rgba(0,0,0,0.4);
-  cursor: pointer;
 }
 
 .book-cover-img {
@@ -810,18 +784,18 @@ html, body {
 .book-cover-area.has-cover .book-cover-empty { display: none; }
 
 .book-cover-empty {
-  font-size: 48px;
+  font-size: 34px;
   opacity: 0.35;
 }
 
 .book-title-inp {
   width: 100%;
-  padding: 10px 14px;
-  border-radius: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.15);
   background: rgba(255,255,255,0.08);
   color: #fff;
-  font-size: 15px;
+  font-size: 12px;
   text-align: center;
   outline: none;
   font-family: inherit;
@@ -829,15 +803,19 @@ html, body {
 .book-title-inp::placeholder { color: rgba(255,255,255,0.3); }
 
 .book-cover-btn {
-  padding: 8px 18px;
-  border-radius: 20px;
+  padding: 6px 12px;
+  border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.2);
   background: rgba(255,255,255,0.1);
   color: #ccc;
-  font-size: 13px;
+  font-size: 11px;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.2s;
+  transition: background 0.2s, opacity 0.2s;
+}
+.book-cover-btn:disabled {
+  opacity: 0.35;
+  pointer-events: none;
 }
 .book-cover-btn:hover { background: rgba(255,255,255,0.18); }
 
@@ -856,14 +834,14 @@ html, body {
 
 .book-review-ta {
   width: 100%;
-  min-height: 100px;
-  padding: 12px;
-  border-radius: 8px;
+  min-height: 70px;
+  padding: 8px;
+  border-radius: 6px;
   border: 1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.06);
   color: #ddd;
-  font-size: 13px;
-  line-height: 1.7;
+  font-size: 11px;
+  line-height: 1.6;
   resize: vertical;
   outline: none;
   font-family: inherit;
@@ -877,10 +855,10 @@ html, body {
 }
 .book-done-btn, .book-delete-btn {
   flex: 1;
-  padding: 10px;
-  border-radius: 10px;
+  padding: 7px;
+  border-radius: 8px;
   border: none;
-  font-size: 14px;
+  font-size: 11px;
   cursor: pointer;
   font-family: inherit;
   transition: background 0.2s;
@@ -919,6 +897,7 @@ html, body {
 .add-book-btn:hover { background: rgba(255,215,0,0.3); }
 
 @media (min-width: 600px) {
-  .add-book-btn { width: 50px; height: 50px; font-size: 28px; }
-  .book-cover-area { width: 140px; height: 180px; }
+  .add-book-btn { width: 46px; height: 46px; font-size: 24px; }
+  .book-cover-area { width: 96px; height: 128px; }
+  .book-detail { width: min(240px, 75vw); }
 }

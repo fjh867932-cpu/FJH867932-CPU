@@ -36,11 +36,22 @@
         <span class="tool-divider"></span>
         <span class="tool-note-count">0 张便签</span>
       </div>
-      <div class="toolbar-pin" title="展开工具栏">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
-        </svg>
+      <div class="float-btns">
+        <button class="float-btn float-btn-pan" title="移动/缩放模式">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3"/>
+          </svg>
+        </button>
+        <button class="float-btn float-btn-add" title="添加便签模式">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+        <button class="float-btn float-btn-tool" title="展开工具栏">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+          </svg>
+        </button>
       </div>
     </div>
   </template>
@@ -58,7 +69,7 @@
         </div>
         <input class="book-title-inp" id="bookTitleInp" placeholder="输入书名…" />
         <button class="book-cover-btn" id="bookCoverBtn">📷 选择封面</button>
-        <input type="file" id="bookCoverFile" accept="image/*" hidden />
+        <input type="file" id="bookCoverFile" accept="image/*" capture="environment" hidden />
         <div class="book-notepad" id="bookNotepad">
           <textarea class="book-review-ta" id="bookReviewTa" placeholder="写观后感…"></textarea>
         </div>
