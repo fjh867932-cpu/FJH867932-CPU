@@ -9,23 +9,21 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- 顶部导航栏 -->
   <nav id="navbar" class="navbar">
     <button id="nav-back" class="nav-back" title="返回">←</button>
     <span id="nav-title" class="nav-title">huiwu.com</span>
     <span class="nav-spacer"></span>
   </nav>
-
-  <!-- 视图容器 -->
   <main id="view" class="view"></main>
 
-  <!-- 便签墙模板 -->
   <template id="tpl-wall">
     <div class="wall">
-      <div class="wall-bg"></div>
-      <div class="notes-layer"></div>
+      <div class="wall-content">
+        <div class="wall-bg"></div>
+        <div class="notes-layer"></div>
+      </div>
       <div class="create-hint">✨ 点击此处贴一张便签</div>
-      <div class="toolbar">
+      <div class="toolbar collapsed">
         <label class="tool-btn" title="更换背景图片">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -38,6 +36,38 @@
         <span class="tool-divider"></span>
         <span class="tool-note-count">0 张便签</span>
       </div>
+      <div class="toolbar-pin" title="展开工具栏">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+        </svg>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-bookshelf">
+    <div class="bookshelf">
+      <div class="starry-bg"></div>
+      <div class="timeline" id="timeline"></div>
+      <div class="books-grid" id="booksGrid"></div>
+      <div class="books-overlay" id="booksOverlay"></div>
+      <div class="book-detail" id="bookDetail">
+        <div class="book-cover-area" id="bookCoverArea">
+          <img class="book-cover-img" id="bookCoverImg" src="" alt="" />
+          <span class="book-cover-empty" id="bookCoverEmpty">📖</span>
+        </div>
+        <input class="book-title-inp" id="bookTitleInp" placeholder="输入书名…" />
+        <button class="book-cover-btn" id="bookCoverBtn">📷 选择封面</button>
+        <input type="file" id="bookCoverFile" accept="image/*" hidden />
+        <div class="book-notepad" id="bookNotepad">
+          <textarea class="book-review-ta" id="bookReviewTa" placeholder="写观后感…"></textarea>
+        </div>
+        <div class="book-detail-actions">
+          <button class="book-delete-btn" id="bookDeleteBtn">删除</button>
+          <button class="book-done-btn" id="bookDoneBtn">完成</button>
+        </div>
+      </div>
+      <button class="add-book-btn" id="addBookBtn">+</button>
     </div>
   </template>
 

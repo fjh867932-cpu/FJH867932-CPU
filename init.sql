@@ -13,21 +13,36 @@ CREATE TABLE IF NOT EXISTS notes (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 设置表（背景图等单行配置）
+-- 设置表
 CREATE TABLE IF NOT EXISTS settings (
   key_name   TEXT PRIMARY KEY,
   value      TEXT DEFAULT ''
 );
 
--- 启用行级安全
-ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
+-- 书籍表
+CREATE TABLE IF NOT EXISTS books (
+  id         TEXT PRIMARY KEY,
+  title      TEXT DEFAULT '',
+  cover_url  TEXT DEFAULT '',
+  review     TEXT DEFAULT '',
+  color      TEXT DEFAULT '',
+  pos_x      NUMERIC(5,2) NOT NULL DEFAULT 50.00,
+  pos_y      NUMERIC(5,2) NOT NULL DEFAULT 50.00,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
--- 允许匿名访问（个人应用）
+-- 启用行级安全
+ALTER TABLE notes    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE books    ENABLE ROW LEVEL SECURITY;
+
+-- 允许匿名访问
 DROP POLICY IF EXISTS "allow_all_notes"    ON notes;
 DROP POLICY IF EXISTS "allow_all_settings" ON settings;
+DROP POLICY IF EXISTS "allow_all_books"    ON books;
 CREATE POLICY "allow_all_notes"    ON notes    FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "allow_all_settings" ON settings FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "allow_all_books"    ON books    FOR ALL USING (true) WITH CHECK (true);
 
 -- 默认背景行
 INSERT INTO settings (key_name, value)
