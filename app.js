@@ -752,7 +752,6 @@ function renderBookshelf() {
     timeline.innerHTML = '';
     if (books.length === 0) return;
 
-    const now = Date.now();
     const first = new Date(books[0].createdAt).getTime();
     const last = new Date(books[books.length - 1].createdAt).getTime();
     const span = Math.max(last - first, 1);
@@ -760,8 +759,15 @@ function renderBookshelf() {
     books.forEach((book, i) => {
       const node = document.createElement('div');
       node.className = 'timeline-node' + (book.id === focusedId ? ' active' : '');
+      node.style.background = RAINBOW[i % RAINBOW.length];
       node.title = book.title || '未命名';
-      node.addEventListener('click', () => focusBook(book.id));
+      node.addEventListener('click', (e) => { e.stopPropagation(); focusBook(book.id); });
+
+      const label = document.createElement('span');
+      label.className = 'timeline-label';
+      label.textContent = formatDateShort(book.createdAt);
+      node.appendChild(label);
+
       timeline.appendChild(node);
 
       if (i < books.length - 1) {
@@ -775,31 +781,80 @@ function renderBookshelf() {
     });
   }
 
+  function formatDateShort(val) {
+    if (!val) return '';
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return '';
+    return `${d.getMonth() + 1}/${d.getDate()}`;
+  }
+
+  timeline.addEventListener('click', (e) => {
+    if (e.target.closest('.timeline-node')) return;
+    timeline.classList.toggle('expanded');
+  });
+
+  function calcSlots() {
+    const rect = booksGrid.getBoundingClientRect();
+    const bw = 82, bh = 106; // book size + gap
+    const cols = Math.floor((rect.width - 8) / bw) || 3;
+    const rows = Math.floor((rect.height - 8) / bh) || 3;
+    return { cols, rows, total: cols * rows };
+  }
+
   function renderBooks() {
     booksGrid.innerHTML = '';
-    books.forEach(book => {
+    const { total } = calcSlots();
+    const realBooks = [...books];
+
+    // 计算需要多少占位书来填满屏幕
+    const placeholders = Math.max(0, total - realBooks.length);
+
+    for (let i = 0; i < total; i++) {
+      const book = i < realBooks.length ? realBooks[i] : null;
       const el = document.createElement('div');
       el.className = 'book-spine';
-      if (book.coverUrl) el.classList.add('has-cover');
-      if (book.id === focusedId) el.classList.add('focused');
-      el.dataset.id = book.id;
-      if (book.coverUrl) {
-        el.style.backgroundImage = `url(${book.coverUrl})`;
+
+      if (book) {
+        if (book.coverUrl) el.classList.add('has-cover');
+        if (book.id === focusedId) el.classList.add('focused');
+        el.dataset.id = book.id;
+        if (book.coverUrl) {
+          el.style.backgroundImage = `url(${book.coverUrl})`;
+        } else {
+          el.style.background = book.color;
+        }
+        if (!book.coverUrl) {
+          const titleEl = document.createElement('span');
+          titleEl.className = 'book-spine-title';
+          titleEl.textContent = book.title || '新书';
+          el.appendChild(titleEl);
+        }
+        el.addEventListener('pointerdown', (e) => {
+          if (e.target.closest('.book-detail')) return;
+          bookPointerDown(e, book);
+        });
       } else {
-        el.style.background = book.color;
+        // 占位空白书
+        const color = randomColor();
+        el.style.background = color;
+        el.style.opacity = '0.6';
+        el.addEventListener('pointerdown', async (e) => {
+          if (e.target.closest('.book-detail')) return;
+          // 创建真实书籍
+          const newBook = {
+            id: uid(),
+            title: '', coverUrl: '', review: '',
+            color: color,
+            posX: 50, posY: 50,
+            createdAt: new Date().toISOString(),
+          };
+          books.push(newBook);
+          await createBookAPI(newBook);
+          focusBook(newBook.id);
+        });
       }
-      if (!book.coverUrl) {
-        const titleEl = document.createElement('span');
-        titleEl.className = 'book-spine-title';
-        titleEl.textContent = book.title || '新书';
-        el.appendChild(titleEl);
-      }
-      el.addEventListener('pointerdown', (e) => {
-        if (e.target.closest('.book-detail')) return;
-        bookPointerDown(e, book);
-      });
       booksGrid.appendChild(el);
-    });
+    }
   }
 
   function refreshAll() {
@@ -978,10 +1033,11 @@ function renderBookshelf() {
     focusBook(book.id);
   });
 
-  // ── 启动 ────────────────────────────────────
+  // ── 启动 + 窗口变化重算 ────────────────────
   async function init() {
     await loadBooks();
     refreshAll();
+    window.addEventListener('resize', () => { if (!focusedId) refreshAll(); });
   }
 
   init();

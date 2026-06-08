@@ -620,7 +620,7 @@ html, body {
   background: rgba(0,0,0,0.15);
 }
 
-/* ─── 时间轴 ──────────────────────────────── */
+/* ─── 时间轴（可展开） ────────────────────── */
 .timeline {
   position: absolute;
   top: 0; left: 0; right: 0;
@@ -629,11 +629,34 @@ html, body {
   padding: 0 12px;
   gap: 4px;
   z-index: 5;
-  background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 100%);
-  overflow-x: auto;
+  background: rgba(0,0,0,0.45);
+  overflow-x: auto; overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  cursor: pointer;
+  transition: height 0.35s ease, background 0.35s ease;
 }
 .timeline::-webkit-scrollbar { display: none; }
+
+.timeline.expanded {
+  height: 86px;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  align-items: flex-end;
+  padding-bottom: 24px;
+}
+.timeline.expanded::before {
+  content: '';
+  position: absolute;
+  top: 30px; left: 18px; right: 18px;
+  height: 2px; border-radius: 1px;
+  background: linear-gradient(90deg,
+    #ff6b6b,#ff9f43,#feca57,#54a0ff,#5f27cd,#1dd1a1,#ff6348,
+    #ff6b6b,#ff9f43,#feca57,#54a0ff,#5f27cd,#1dd1a1,#ff6348
+  );
+  opacity: 0; transition: opacity 0.3s ease 0.15s;
+}
+.timeline.expanded::before { opacity: 1; }
 
 .timeline-node {
   width: 10px; height: 10px;
@@ -641,14 +664,29 @@ html, body {
   flex-shrink: 0;
   transition: transform 0.2s;
   cursor: pointer;
+  position: relative; z-index: 2;
 }
 .timeline-node:hover { transform: scale(1.5); }
 .timeline-node.active { box-shadow: 0 0 10px currentColor; transform: scale(1.3); }
+
+.timeline-label {
+  position: absolute;
+  bottom: -20px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  color: rgba(255,255,255,0.7);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease 0.15s;
+}
+.timeline.expanded .timeline-label { opacity: 1; }
 
 .timeline-gap {
   height: 1px;
   background: rgba(255,255,255,0.1);
   flex-shrink: 0;
+  position: relative; z-index: 1;
 }
 
 /* ─── 书籍网格 ────────────────────────────── */
