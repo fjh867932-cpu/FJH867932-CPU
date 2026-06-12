@@ -2,7 +2,56 @@
    huiwu.com — SPA + 便签墙 + AI 对话
    ========================================== */
 
-const SUPABASE_URL = 'https://wwqqvfnuxpddhgwuwiut.supabase.co';
+// ─── 访问门禁 ──────────────────────────────────
+const AUTH_FN_URL = 'https://wwqqvfnuxpddhgwuwiut.supabase.co/functions/v1/auth';
+const AUTH_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3cXF2Zm51eHBkZGhnd3V3aXV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NzAwNDcsImV4cCI6MjA5NjI0NjA0N30.eCfxc2WeXkpJiMXRCzydwmFE3Z6UMk3aqOdrhdzZbug';
+
+(function checkAuth() {
+  const session = localStorage.getItem('huiwu_session');
+  if (session) {
+    try {
+      const { time } = JSON.parse(session);
+      if (Date.now() - time < 3 * 24 * 60 * 60 * 1000) return; // 3天有效
+    } catch (_) {}
+  }
+  // 无有效会话，渲染门禁页
+  document.body.innerHTML = `
+    <div class="gate-page">
+      <div class="gate-box">
+        <h1>huiwu.com</h1>
+        <p>请输入访问密钥</p>
+        <input type="password" id="gateKey" placeholder="密钥…" autofocus />
+        <button id="gateBtn">进入</button>
+        <label><input type="checkbox" id="gateRemember" checked /> 记住 3 天</label>
+        <p id="gateErr" style="color:#e05555;display:none"></p>
+      </div>
+    </div>`;
+  document.getElementById('gateBtn').addEventListener('click', async () => {
+    const key = document.getElementById('gateKey').value.trim();
+    if (!key) return;
+    try {
+      const res = await fetch(AUTH_FN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_ANON_KEY}` },
+        body: JSON.stringify({ key }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        localStorage.setItem('huiwu_session', JSON.stringify({ session: data.session, time: Date.now() }));
+        location.reload();
+      } else {
+        const err = document.getElementById('gateErr');
+        err.textContent = '密钥错误';
+        err.style.display = 'block';
+      }
+    } catch (e) {
+      document.getElementById('gateErr').textContent = '网络错误';
+      document.getElementById('gateErr').style.display = 'block';
+    }
+  });
+  throw new Error('GATE'); // 阻止后续 JS 执行
+})();
+   const SUPABASE_URL = 'https://wwqqvfnuxpddhgwuwiut.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_JlVVDqSKs7RHM6VMldBIYA_CsLWihKo';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3cXF2Zm51eHBkZGhnd3V3aXV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NzAwNDcsImV4cCI6MjA5NjI0NjA0N30.eCfxc2WeXkpJiMXRCzydwmFE3Z6UMk3aqOdrhdzZbug';
 const SUPABASE_FN_URL = `${SUPABASE_URL}/functions/v1/chat`;
