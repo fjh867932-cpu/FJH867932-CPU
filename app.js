@@ -2,35 +2,10 @@
    huiwu.com — SPA + 便签墙 + AI 对话
    ========================================== */
 
-// ─── Supabase 配置 ─────────────────────────────
-const SUPABASE_URL = 'https://wwqqvfnuxpddhgwuwiut.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_JlVVDqSKs7RHM6VMldBIYA_CsLWihKo';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3cXF2Zm51eHBkZGhnd3V3aXV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NzAwNDcsImV4cCI6MjA5NjI0NjA0N30.eCfxc2WeXkpJiMXRCzydwmFE3Z6UMk3aqOdrhdzZbug';
-const SUPABASE_FN_URL = `${SUPABASE_URL}/functions/v1/chat`;
-
-const supabaseHeaders = () => ({
-  'Content-Type': 'application/json',
-  'apikey': SUPABASE_KEY,
-  'Authorization': `Bearer ${SUPABASE_KEY}`,
-});
-
-function createSession() {
-  const arr = crypto.getRandomValues(new Uint8Array(32));
-  return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('') + '.' + Date.now();
-}
-
-async function validateAccessKey(key) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/validate_access_key`, {
-    method: 'POST',
-    headers: supabaseHeaders(),
-    body: JSON.stringify({ input_key: key }),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || `请求失败 (${res.status})`);
-  return data;
-}
-
 // ─── 访问门禁 ──────────────────────────────────
+const AUTH_FN_URL = 'https://wwqqvfnuxpddhgwuwiut.supabase.co/functions/v1/smart-handler';
+const AUTH_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3cXF2Zm51eHBkZGhnd3V3aXV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NzAwNDcsImV4cCI6MjA5NjI0NjA0N30.eCfxc2WeXkpJiMXRCzydwmFE3Z6UMk3aqOdrhdzZbug';
+
 (function checkAuth() {
   const session = localStorage.getItem('huiwu_session');
   if (session) {
@@ -54,36 +29,35 @@ async function validateAccessKey(key) {
   document.getElementById('gateBtn').addEventListener('click', async () => {
     const key = document.getElementById('gateKey').value.trim();
     if (!key) return;
-    const errEl = document.getElementById('gateErr');
     try {
-      const data = await validateAccessKey(key);
+      const res = await fetch(AUTH_FN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AUTH_ANON_KEY}` },
+        body: JSON.stringify({ key }),
+      });
+      const data = await res.json();
       if (data.valid) {
-        localStorage.setItem('huiwu_session', JSON.stringify({ session: createSession(), time: Date.now() }));
+        localStorage.setItem('huiwu_session', JSON.stringify({ session: data.session, time: Date.now() }));
         location.reload();
-      } else if (data.error === 'access_key not configured') {
-        errEl.textContent = '服务端未配置密钥，请在 settings 表设置 access_key';
-        errEl.style.display = 'block';
       } else {
-        errEl.textContent = '密钥错误';
-        errEl.style.display = 'block';
+        const err = document.getElementById('gateErr');
+        err.textContent = '密钥错误';
+        err.style.display = 'block';
       }
     } catch (e) {
-      const msg = e.message || '';
-      if (msg.includes('validate_access_key')) {
-        errEl.textContent = '数据库函数未创建，请在 Supabase 执行 fix-migration.sql';
-      } else if (msg.includes('PGRST205')) {
-        errEl.textContent = '数据表未暴露给 API，请在 Supabase 执行 fix-migration.sql';
-      } else {
-        errEl.textContent = msg.includes('Failed to fetch') ? '网络错误，请检查网络或 Supabase 配置' : (msg || '网络错误');
-      }
-      errEl.style.display = 'block';
+      document.getElementById('gateErr').textContent = '网络错误';
+      document.getElementById('gateErr').style.display = 'block';
     }
   });
   throw new Error('GATE'); // 阻止后续 JS 执行
 })();
+   const SUPABASE_URL = 'https://wwqqvfnuxpddhgwuwiut.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_JlVVDqSKs7RHM6VMldBIYA_CsLWihKo';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3cXF2Zm51eHBkZGhnd3V3aXV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NzAwNDcsImV4cCI6MjA5NjI0NjA0N30.eCfxc2WeXkpJiMXRCzydwmFE3Z6UMk3aqOdrhdzZbug';
+const SUPABASE_FN_URL = `${SUPABASE_URL}/functions/v1/chat`;
 
 async function api(path, { method = 'GET', body, headers = {} } = {}) {
-  const opts = { method, headers: { ...supabaseHeaders(), ...headers } };
+  const opts = { method, headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', ...headers } };
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, opts);
   if (!res.ok) { console.error(`API ${method} ${path} failed:`, res.status); return null; }
