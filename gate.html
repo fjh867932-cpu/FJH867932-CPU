@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>huiwu.com — Gateway</title>
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html,body{width:100%;height:100%;overflow:hidden;background:#050816;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:40px}
+    .ring{position:absolute;width:min(300px,60vw);height:min(300px,60vw);border-radius:50%;border:1px solid rgba(0,245,255,.08);animation:spin 30s linear infinite;pointer-events:none}
+    .ring:nth-child(2){width:min(400px,75vw);height:min(400px,75vw);border-color:rgba(122,92,255,.06);animation-direction:reverse;animation-duration:40s}
+    .ring:nth-child(3){width:min(200px,40vw);height:min(200px,40vw);border-color:rgba(0,245,255,.1);animation-duration:20s}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .scan{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,245,255,.015) 2px,rgba(0,245,255,.015) 4px);pointer-events:none;z-index:2}
+    .core{position:relative;z-index:10;text-align:center}
+    .core h1{font-size:clamp(28px,6vw,42px);font-weight:300;letter-spacing:.3em;color:#00F5FF;text-shadow:0 0 40px rgba(0,245,255,.15)}
+    .core .tag{font-size:clamp(11px,2vw,13px);color:rgba(122,92,255,.6);letter-spacing:.4em;margin:8px 0 60px}
+    .core .hint{font-size:11px;color:rgba(0,245,255,.35);letter-spacing:.15em;animation:pulse 2.5s infinite}
+    @keyframes pulse{0%,100%{opacity:.3}50%{opacity:.8}}
+    .flash{position:fixed;inset:0;background:#fff;z-index:999;opacity:0;pointer-events:none;transition:opacity .5s}
+    .flash.go{opacity:.8;transition:opacity .2s}
+  </style>
+</head>
+<body>
+  <div class="gate" id="gate">
+    <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+    <div class="scan"></div>
+    <div class="core">
+      <h1>huiwu.com</h1>
+      <div class="tag">Private Digital Workspace</div>
+      <div class="hint">触碰以进入</div>
+    </div>
+  </div>
+  <div class="flash" id="flash"></div>
+  <script>
+    document.getElementById('gate').addEventListener('click',()=>{
+      sessionStorage.setItem('passed_gate','true');
+      document.getElementById('flash').classList.add('go');
+      setTimeout(()=>{window.location.href='/index.html'},400);
+    });
+  </script>
+</body>
+</html>

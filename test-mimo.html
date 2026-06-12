@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiMo 测试</title>
+<style>
+  body{font-family:sans-serif;max-width:600px;margin:40px auto;padding:20px;background:#f5f5f5}
+  input{width:100%;padding:12px;font-size:16px;border:1px solid #ccc;border-radius:8px;margin-bottom:10px}
+  button{width:100%;padding:12px;font-size:16px;background:#c8963e;color:#fff;border:none;border-radius:8px;cursor:pointer}
+  #out{white-space:pre-wrap;background:#fff;padding:16px;border-radius:8px;margin-top:10px;min-height:100px;border:1px solid #ddd}
+</style>
+</head>
+<body>
+<h2>MiMo AI 测试</h2>
+<input id="q" placeholder="输入问题…" value="你好" />
+<button onclick="test()">发送</button>
+<div id="out">等待测试…</div>
+
+<script>
+// ========== 配置（替换为你的 anon key） ==========
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3cXF2Zm51eHBkZGhnd3V3aXV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NzAwNDcsImV4cCI6MjA5NjI0NjA0N30.eCfxc2WeXkpJiMXRCzydwmFE3Z6UMk3aqOdrhdzZbug';
+
+async function test() {
+  const q = document.getElementById('q').value;
+  document.getElementById('out').textContent = '请求中…';
+  try {
+    const res = await fetch('https://wwqqvfnuxpddhgwuwiut.supabase.co/functions/v1/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + ANON_KEY,
+      },
+      body: JSON.stringify({ messages: [{ role: 'user', content: q }] }),
+    });
+    const data = await res.json();
+    document.getElementById('out').textContent = JSON.stringify(data, null, 2);
+  } catch (e) {
+    document.getElementById('out').textContent = '网络错误: ' + e.message;
+  }
+}
+</script>
+</body>
+</html>

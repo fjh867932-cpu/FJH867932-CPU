@@ -3,54 +3,65 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>huiwu.com</title>
-  <link rel="stylesheet" href="style.css">
+  <title>huiwu.com — 身份验证</title>
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#020510}
+    .city{position:fixed;inset:0;overflow:hidden}
+    .sky{position:absolute;inset:0;background:linear-gradient(180deg,#000310 0%,#0a1030 30%,#1a1040 60%,#0a0020 100%)}
+    .stars{position:absolute;inset:0;background:radial-gradient(1px 1px at 10% 15%,rgba(255,255,255,.8),transparent),radial-gradient(1px 1px at 25% 8%,rgba(255,255,255,.6),transparent),radial-gradient(1.5px 1.5px at 40% 20%,rgba(200,220,255,.7),transparent),radial-gradient(1px 1px at 55% 12%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 70% 18%,rgba(255,255,255,.7),transparent),radial-gradient(1.5px 1.5px at 85% 10%,rgba(200,220,255,.6),transparent),radial-gradient(1px 1px at 80% 22%,rgba(255,255,255,.4),transparent)}
+    .skyline-far{position:absolute;bottom:20%;left:0;right:0;height:30%;background:linear-gradient(0deg,transparent 0%,rgba(8,12,40,.9) 100%)}
+    .skyline-near{position:absolute;bottom:0;left:0;right:0;height:50%;background:linear-gradient(0deg,rgba(3,5,20,1) 0%,transparent 100%)}
+    .scanlines{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);pointer-events:none;z-index:5}
+    .horizon{position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(100,150,255,.4) 20%,rgba(100,200,255,.5) 50%,rgba(100,150,255,.4) 80%,transparent);box-shadow:0 0 20px rgba(100,150,255,.3);z-index:10}
+    .panel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:20;width:min(360px,85vw);padding:36px 28px;text-align:center;background:rgba(10,15,40,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(100,150,255,.2);border-radius:16px;box-shadow:0 0 40px rgba(100,150,255,.1)}
+    .panel h1{font-size:22px;font-weight:700;letter-spacing:2px;color:#c8d8ff;text-shadow:0 0 20px rgba(100,150,255,.4)}
+    .panel .sub{font-size:11px;color:rgba(150,180,220,.6);letter-spacing:1px;margin:4px 0 24px}
+    .panel input{width:100%;padding:12px 16px;font-size:16px;border:1px solid rgba(100,150,255,.25);border-radius:8px;text-align:center;outline:none;background:rgba(0,0,0,.3);color:#c8d8ff;letter-spacing:1px;transition:border-color .3s,box-shadow .3s}
+    .panel input:focus{border-color:rgba(100,180,255,.5);box-shadow:0 0 16px rgba(100,150,255,.15)}
+    .panel input::placeholder{color:rgba(150,180,220,.25)}
+    .panel button{width:100%;padding:12px;margin-top:16px;font-size:15px;font-weight:600;letter-spacing:1px;border:none;border-radius:8px;cursor:pointer;background:linear-gradient(135deg,rgba(60,120,220,.3),rgba(100,150,255,.2));color:#c8d8ff;border:1px solid rgba(100,150,255,.3);transition:all .3s}
+    .panel button:hover{background:linear-gradient(135deg,rgba(100,150,255,.3),rgba(60,120,220,.2));box-shadow:0 0 20px rgba(100,150,255,.2)}
+    .panel .err{color:#ff6b6b;font-size:12px;margin-top:10px;display:none}
+    @media(max-width:600px){.panel{top:45%;padding:28px 20px}}
+  </style>
 </head>
 <body>
-  <nav id="navbar" class="navbar">
-    <button id="nav-back" class="nav-back" title="返回">←</button>
-    <span id="nav-title" class="nav-title">huiwu.com</span>
-    <span class="nav-spacer"></span>
-  </nav>
-  <main id="view" class="view"></main>
-
-  <template id="tpl-wall">
-    <div class="wall">
-      <div class="wall-content">
-        <div class="wall-bg"></div>
-        <div class="notes-layer"></div>
-      </div>
-      <div class="create-hint">✨ 点击此处贴一张便签</div>
-      <div class="toolbar collapsed">
-        <label class="tool-btn" title="更换背景图片">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-          <span>背景</span>
-          <input type="file" class="bg-input" accept="image/*" hidden>
-        </label>
-        <span class="tool-divider"></span>
-        <span class="tool-note-count">0 张便签</span>
-      </div>
-      <div class="float-btns">
-        <button class="float-btn float-btn-pan" title="移动/缩放模式"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3"/></svg></button>
-        <button class="float-btn float-btn-add" title="添加便签模式"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-        <button class="float-btn float-btn-tool" title="展开工具栏"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button>
-      </div>
+  <div class="city">
+    <div class="sky"></div>
+    <div class="stars"></div>
+    <div class="skyline-far"></div>
+    <div class="skyline-near"></div>
+    <div class="horizon"></div>
+    <div class="scanlines"></div>
+    <div class="panel">
+      <h1>huiwu.com</h1>
+      <div class="sub">Identity Verification</div>
+      <input type="password" id="gk" placeholder="输入访问密钥" autofocus />
+      <button id="gb">验证进入</button>
+      <div class="err" id="ge"></div>
     </div>
-  </template>
+  </div>
+  <script>
+    const AUTH_FN_URL='https://wwqqvfnuxpddhgwuwiut.supabase.co/functions/v1/smart-handler';
+    const AUTH_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3cXF2Zm51eHBkZGhnd3V3aXV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NzAwNDcsImV4cCI6MjA5NjI0NjA0N30.eCfxc2WeXkpJiMXRCzydwmFE3Z6UMk3aqOdrhdzZbug';
 
-  <template id="tpl-chat">
-    <div class="chat-container">
-      <div class="chat-messages" id="chatMessages"><div class="chat-empty">👋 有什么学习问题问我？</div></div>
-      <div class="chat-input-area">
-        <textarea class="chat-input" id="chatInput" rows="2" placeholder="输入你的问题…"></textarea>
-        <button class="chat-send-btn" id="chatSendBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg></button>
-      </div>
-      <div class="chat-status" id="chatStatus"><span>本次：—</span><span>今日：—</span><span>剩余：未知</span></div>
-    </div>
-  </template>
+    // 大门检查
+    if(!sessionStorage.getItem('passed_gate')){window.location.href='/gate.html'}
 
-  <script src="app.js"></script>
+    // 已登录检查
+    (function(){const s=localStorage.getItem('huiwu_session');if(s){try{const{time}=JSON.parse(s);if(Date.now()-time<259200000){window.location.href='/main.html';return}}catch(_){}}})();
+
+    document.getElementById('gb').onclick=async()=>{
+      const k=document.getElementById('gk').value.trim();if(!k)return;
+      const btn=document.getElementById('gb'),err=document.getElementById('ge');
+      btn.textContent='验证中…';btn.disabled=true;err.style.display='none';
+      try{const r=await fetch(AUTH_FN_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+AUTH_ANON_KEY},body:JSON.stringify({key:k})});const d=await r.json();
+        if(d.valid){localStorage.setItem('huiwu_session',JSON.stringify({session:d.session,time:Date.now()}));localStorage.setItem('verified','true');setTimeout(()=>{window.location.href='/main.html'},500)}
+        else{err.textContent='密钥错误，拒绝访问';err.style.display='block'}
+      }catch(_){err.textContent='网络连接失败';err.style.display='block'}
+      btn.textContent='验证进入';btn.disabled=false;
+    };
+  </script>
 </body>
 </html>
